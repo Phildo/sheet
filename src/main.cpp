@@ -2,11 +2,11 @@
 #include <string.h>
 #include <stdio.h>
 
-int width = 0;
+int width  = 0;
 int height = 0;
 char *buff = 0;
 char *tmp_buff = 0;
-char *out_name = 0;
+const char *out_name = 0;
 
 struct subimg
 {
@@ -22,12 +22,12 @@ int n_subimgs;
 
 int parseArgs(int argc, char **argv)
 {
-  int i = 0;
+  int i = 1;
   while(i < argc)
   {
-         if(strcmp(argv[i],"-w")) { i++; width    = atoi(argv[i]); i++; }
-    else if(strcmp(argv[i],"-h")) { i++; height   = atoi(argv[i]); i++; }
-    else if(strcmp(argv[i],"-o")) { i++; out_name = argv[i];       i++; }
+         if(strcmp(argv[i],"-w") == 0) { i++; width    = atoi(argv[i]); i++; }
+    else if(strcmp(argv[i],"-h") == 0) { i++; height   = atoi(argv[i]); i++; }
+    else if(strcmp(argv[i],"-o") == 0) { i++; out_name = argv[i];       i++; }
     else return i;
   }
   return i;
@@ -110,7 +110,7 @@ int findPlacement(subimg *img)
 void placeImg(subimg img)
 {
   for(int y = 0; y < img.h; y++)
-    for(int x = 0; x < img.w; y++)
+    for(int x = 0; x < img.w; x++)
       buff[((img.y+y)*width) + (img.x+x)] = tmp_buff[(y*img.w) + x];
   subimgs[n_subimgs++] = img;
 }
@@ -164,6 +164,7 @@ int main(int argc, char **argv)
   i = parseArgs(argc, argv);
   if(!width)  width  = 2048;
   if(!height) height = 2048;
+  if(!out_name) out_name = "out";
 
   buff     = (char *)malloc(width*height*4*sizeof(char));
   tmp_buff = (char *)malloc(width*height*4*sizeof(char));

@@ -1,7 +1,7 @@
 CURDIR = $(shell pwd)
 SRCDIR = $(CURDIR)/src
 BINDIR = $(CURDIR)/bin
-OUTFILE = $(BINDIR)/asset_gen.out
+OUTFILE = $(BINDIR)/sheet
 
 CC = g++ -O0
 DEBUGFLAGS = -ggdb3 -O0
@@ -12,7 +12,7 @@ LFLAGS = -Wall
 HEADERS=$(wildcard $(SRCDIR)/*.h)
 SOURCES=$(wildcard $(SRCDIR)/*.cpp)
 
-ARGS=-w 256 -h 256 -o my_sheet ~/Desktop/bug_0.24x24pi ~/Desktop/bug_1.36x36pi
+ARGS=-w 256 -h 256 -o my_sheet ~/Desktop/bug_1.36x36pi ~/Desktop/bug_3.4x4pi ~/Desktop/bug_0.24x24pi
 
 b: build
 	
@@ -24,7 +24,7 @@ build: $(OUTFILE)
 	@
 
 run: $(OUTFILE)
-	@$(OUTFILE) $(ARGS)
+	@$(OUTFILE) $(ARGS) ; cp my_sheet.256x256pi ~/Desktop/doside/assets/atlas.256x256pi
 
 $(OUTFILE).dSYM: $(HEADERS) $(SOURCES)
 	@$(CC) $(DEBUGFLAGS) $(CFLAGS) $(LFLAGS) $(SOURCES) -o $(OUTFILE)

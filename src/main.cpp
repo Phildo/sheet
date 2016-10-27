@@ -2,10 +2,12 @@
 #include <string.h>
 #include <stdio.h>
 
+typedef unsigned char uint8;
+
 int width  = 0;
 int height = 0;
-char *buff = 0;
-char *tmp_buff = 0;
+uint8 *buff = 0;
+uint8 *tmp_buff = 0;
 const char *out_name = 0;
 
 struct subimg
@@ -14,7 +16,9 @@ struct subimg
   int y;
   int w;
   int h;
-  const char *name;
+  float cx;
+  float cy;
+  char name[256];
 };
 
 subimg subimgs[100];
@@ -33,25 +37,94 @@ int parseArgs(int argc, char **argv)
   return i;
 }
 
-int parseSize(const char *file_name, int *w, int *h)
+void parseName(const char *file_name, char *buff)
+{
+  int i = 0;
+  int start_i = 0;
+  int end_i = 0;
+
+  //find end
+  while(file_name[end_i] != '\0') end_i++;
+  while(end_i >= 0 && file_name[end_i] != '.') end_i--;
+
+  //find start
+  start_i = end_i;
+  while(start_i >= 0 && file_name[start_i] != '/') start_i--;
+  start_i++;
+
+  //shrink end
+  i = end_i;
+  i--;
+  while((file_name[i] >= '0' && file_name[i] <= '9') || file_name[i] == '.') i--;
+  if(i != end_i-1 && file_name[i] == 'c')
+  {
+    end_i = i;
+    i--;
+    while((file_name[i] >= '0' && file_name[i] <= '9') || file_name[i] == '.') i--;
+    if(i != end_i-1)
+    end_i = i;
+  }
+
+  int j = 0;
+  while(start_i < end_i) { buff[j] = file_name[start_i]; start_i++; j++; }
+}
+
+int parseSize(const char *file_name, int *w, int *h, float *cx, float *cy)
 {
   int len = strlen(file_name);
-  char intbuff[256];
+  char valbuff[256];
   int i = len-1;
   int j;
-  while(i > 0   && file_name[i] != '.') i--;
+  int mark_i;
+  while(i > 0 && file_name[i] != '.') i--;
+  mark_i = i;
 
+  //width
   j = 0;
   i++;
-  while(i < len && file_name[i] != 'x') intbuff[j++] = file_name[i++];
-  intbuff[j] = '\0';
-  *w = atoi(intbuff);
+  while(i < len && file_name[i] != 'x') valbuff[j++] = file_name[i++];
+  valbuff[j] = '\0';
+  *w = atoi(valbuff);
 
+  //height
   j = 0;
   i++;
-  while(i < len && file_name[i] != 'p') intbuff[j++] = file_name[i++];
-  intbuff[j] = '\0';
-  *h = atoi(intbuff);
+  while(i < len && file_name[i] != 'p') valbuff[j++] = file_name[i++];
+  valbuff[j] = '\0';
+  *h = atoi(valbuff);
+
+  //cy
+  i = mark_i;
+  i--;
+  int valid = true;
+  while(i > 0 && ((file_name[i] >= '0' && file_name[i] <= '9') || file_name[i] == '.')) i--; //decrement while valid float val
+  if(i != mark_i-1 && file_name[i] == 'c')
+  {
+    mark_i = i;
+    i++;
+    while(i < len && file_name[i] != '.') valbuff[j++] = file_name[i++];
+    valbuff[j] = '\0';
+    *cy = atof(valbuff);
+
+    i = mark_i;
+    i--;
+    while(i > 0 && ((file_name[i] >= '0' && file_name[i] <= '9') || file_name[i] == '.')) i--; //decrement while valid float val
+    if(i != mark_i-1)
+    {
+      i++;
+      while(i < len && file_name[i] != 'c') valbuff[j++] = file_name[i++];
+      valbuff[j] = '\0';
+      *cx = atof(valbuff);
+    }
+    else valid = false;
+  }
+  else valid = false;
+
+  if(!valid)
+  {
+    *cx = 0.5;
+    *cy = 0.5;
+  }
 
   return 0;
 }
@@ -60,7 +133,7 @@ void readFile(const char *file_name, int w, int h)
 {
   FILE *fp;
   fp = fopen(file_name,"r");
-  fgets(tmp_buff, w*h*4, fp);
+  fread(tmp_buff,sizeof(uint8),w*h*4,fp);
   fclose(fp);
 }
 
@@ -109,17 +182,28 @@ int findPlacement(subimg *img)
 
 void placeImg(subimg img)
 {
+  int src_i;
+  int dst_i;
   for(int y = 0; y < img.h; y++)
+  {
     for(int x = 0; x < img.w; x++)
-      buff[((img.y+y)*width) + (img.x+x)] = tmp_buff[(y*img.w) + x];
+    {
+      src_i =  (       y *img.w*4)  + (      x)*4;
+      dst_i = (((img.y+y)*width*4)) + (img.x+x)*4;
+      buff[dst_i+0] = tmp_buff[src_i+0];
+      buff[dst_i+1] = tmp_buff[src_i+1];
+      buff[dst_i+2] = tmp_buff[src_i+2];
+      buff[dst_i+3] = tmp_buff[src_i+3];
+    }
+  }
   subimgs[n_subimgs++] = img;
 }
 
 void appendImg(const char *file_name)
 {
   subimg img;
-  img.name = file_name;
-  parseSize(file_name, &img.w, &img.h);
+  parseName(file_name, img.name);
+  parseSize(file_name, &img.w, &img.h, &img.cx, &img.cy);
   readFile(file_name, img.w, img.h);
   findPlacement(&img);
   placeImg(img);
@@ -132,19 +216,20 @@ void printImg()
 
   FILE *fp;
   fp = fopen(out_file_name,"w");
-  fwrite(buff, sizeof(char), width*height*4, fp);
+  fwrite(buff, sizeof(uint8), width*height*4, fp);
   fclose(fp);
 }
 
 void printMeta()
 {
   char out_file_name[1024];
-  sprintf(out_file_name,"%s.%dx%dpi_meta",out_name,width,height);
+  sprintf(out_file_name,"%s.pi_meta",out_name);
 
   FILE *fp;
   fp = fopen(out_file_name,"w");
   fprintf(fp,"%d\n",width);
   fprintf(fp,"%d\n",height);
+  fprintf(fp,"%d\n",n_subimgs);
   fprintf(fp,"\n");
   for(int i = 0; i < n_subimgs; i++)
   {
@@ -153,6 +238,8 @@ void printMeta()
     fprintf(fp,"%d\n",subimgs[i].y);
     fprintf(fp,"%d\n",subimgs[i].w);
     fprintf(fp,"%d\n",subimgs[i].h);
+    fprintf(fp,"%f\n",subimgs[i].cx);
+    fprintf(fp,"%f\n",subimgs[i].cy);
     fprintf(fp,"\n");
   }
   fclose(fp);
@@ -166,8 +253,8 @@ int main(int argc, char **argv)
   if(!height) height = 2048;
   if(!out_name) out_name = "out";
 
-  buff     = (char *)malloc(width*height*4*sizeof(char));
-  tmp_buff = (char *)malloc(width*height*4*sizeof(char));
+  buff     = (uint8 *)malloc(width*height*4*sizeof(uint8));
+  tmp_buff = (uint8 *)malloc(width*height*4*sizeof(uint8));
 
   for(; i < argc; i++) appendImg(argv[i]);
   printImg();

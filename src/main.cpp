@@ -52,21 +52,55 @@ void parseName(const char *file_name, char *buff)
   while(start_i >= 0 && file_name[start_i] != '/') start_i--;
   start_i++;
 
-  //shrink end
+  //shrink end (if float center specified)
   i = end_i;
   i--;
-  while((file_name[i] >= '0' && file_name[i] <= '9') || file_name[i] == '.') i--;
-  if(i != end_i-1 && file_name[i] == 'c')
+  bool valid = true;;
+
+  //back up through float
+  if(valid)
   {
-    end_i = i;
-    i--;
-    while((file_name[i] >= '0' && file_name[i] <= '9') || file_name[i] == '.') i--;
-    if(i != end_i-1)
-    end_i = i;
+    valid = false;
+    while((file_name[i] >= '0' && file_name[i] <= '9')) { i--; valid = true; }
+    if(valid && file_name[i] == '.') i--;
+    else valid = false;
+    if(valid)
+    {
+      valid = false;
+      while((file_name[i] >= '0' && file_name[i] <= '9')) { i--; valid = true; }
+    }
   }
+
+  if(valid)
+  {
+    if(file_name[i] == 'x') i--;
+    else valid = false;
+  }
+
+  if(valid)
+  {
+    valid = false;
+    while((file_name[i] >= '0' && file_name[i] <= '9')) { i--; valid = true; }
+    if(valid && file_name[i] == '.') i--;
+    else valid = false;
+    if(valid)
+    {
+      valid = false;
+      while((file_name[i] >= '0' && file_name[i] <= '9')) { i--; valid = true; }
+    }
+  }
+
+  if(valid)
+  {
+    if(file_name[i] == 'c') i--;
+    else valid = false;
+  }
+
+  if(valid) end_i = i+1;
 
   int j = 0;
   while(start_i < end_i) { buff[j] = file_name[start_i]; start_i++; j++; }
+  buff[j] = '\0';
 }
 
 //sample filename:

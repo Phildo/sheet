@@ -69,6 +69,19 @@ void parseName(const char *file_name, char *buff)
   while(start_i < end_i) { buff[j] = file_name[start_i]; start_i++; j++; }
 }
 
+//sample filename:
+//myfilec0.2x0.5.12x34pi
+// ^    ^ ^ ^ ^ ^ ^^^ ^
+//0: name
+//1: c
+//2: float
+//3: x
+//4: float
+//5: .
+//6: int
+//7: x
+//8: int
+//9: pi
 int parseSize(const char *file_name, int *w, int *h, float *cx, float *cy)
 {
   int len = strlen(file_name);
@@ -93,26 +106,34 @@ int parseSize(const char *file_name, int *w, int *h, float *cx, float *cy)
   valbuff[j] = '\0';
   *h = atoi(valbuff);
 
-  //cy
+  //cx/cy
   i = mark_i;
   i--;
   int valid = true;
+  int n_dots;
   while(i > 0 && ((file_name[i] >= '0' && file_name[i] <= '9') || file_name[i] == '.')) i--; //decrement while valid float val
-  if(i != mark_i-1 && file_name[i] == 'c')
+  if(i != mark_i-1 && file_name[i] == 'x') //from 'x'
   {
     mark_i = i;
+    j = 0;
     i++;
-    while(i < len && file_name[i] != '.') valbuff[j++] = file_name[i++];
+    n_dots = 0;
+    while(i < len && n_dots < 2) //to two dots
+    {
+      if(file_name[i] == '.') n_dots++;
+      if(n_dots < 2) valbuff[j++] = file_name[i++];
+    }
     valbuff[j] = '\0';
     *cy = atof(valbuff);
 
     i = mark_i;
+    j = 0;
     i--;
     while(i > 0 && ((file_name[i] >= '0' && file_name[i] <= '9') || file_name[i] == '.')) i--; //decrement while valid float val
-    if(i != mark_i-1)
+    if(i != mark_i-1 && file_name[i] == 'c') //from c
     {
       i++;
-      while(i < len && file_name[i] != 'c') valbuff[j++] = file_name[i++];
+      while(i < len && file_name[i] != 'x') valbuff[j++] = file_name[i++]; //to x
       valbuff[j] = '\0';
       *cx = atof(valbuff);
     }

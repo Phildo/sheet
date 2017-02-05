@@ -20,7 +20,7 @@ struct subimg
   int h;
   float cx;
   float cy;
-  char name[256];
+  char name[512];
 };
 
 subimg subimgs[512];
@@ -238,7 +238,7 @@ int findPlacement(subimg *img)
     }
   }
 
-  return coll;
+  return !coll;
 }
 
 void placeImg(subimg img)
@@ -266,8 +266,8 @@ void appendImg(const char *file_name)
   parseName(file_name, img.name);
   parseSize(file_name, &img.w, &img.h, &img.cx, &img.cy);
   readFile(file_name, img.w, img.h);
-  findPlacement(&img);
-  placeImg(img);
+  if(findPlacement(&img)) placeImg(img);
+  else fprintf("Could not place %s\n",name);
 }
 
 void printImg()

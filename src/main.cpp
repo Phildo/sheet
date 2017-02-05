@@ -9,6 +9,8 @@ int height = 0;
 uint8 *buff = 0;
 uint8 *tmp_buff = 0;
 const char *out_name = 0;
+int first_open_x = 0;
+int first_open_y = 0;
 
 struct subimg
 {
@@ -21,7 +23,7 @@ struct subimg
   char name[256];
 };
 
-subimg subimgs[100];
+subimg subimgs[512];
 int n_subimgs;
 
 int parseArgs(int argc, char **argv)
@@ -212,19 +214,23 @@ int fits(int x, int y, int w, int h)
 
 int findPlacement(subimg *img)
 {
-  img->x = 0;
-  img->y = 0;
+  img->x = first_open_x;
+  img->y = first_open_y;
   int coll = true;
+  int found_first = false;
   while(coll && img->y < height)
   {
     coll = false;
-    for(int i = 0; i < n_subimgs; i++)
+    for(int i = 0; !coll && i < n_subimgs; i++)
       if(collides(img->x,img->y,img->w,img->h,subimgs[i].x,subimgs[i].y,subimgs[i].w,subimgs[i].h)) coll = true;
-    if(coll)
+    if(coll) img->x++;
+    if(!coll && !found_first)
     {
-      img->x++;
+      first_open_x = img->x;
+      first_open_y = img->y;
+      found_first = true;
     }
-    else if(!fits(img->x,img->y,img->w,img->h))
+     if(!coll && !fits(img->x,img->y,img->w,img->h))
     {
       coll = true;
       img->x = 0;

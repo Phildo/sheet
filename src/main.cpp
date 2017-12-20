@@ -267,7 +267,7 @@ void appendImg(const char *file_name)
   parseSize(file_name, &img.w, &img.h, &img.cx, &img.cy);
   readFile(file_name, img.w, img.h);
   if(findPlacement(&img)) placeImg(img);
-  else fprintf("Could not place %s\n",name);
+  else printf("Could not place %s\n",img.name);
 }
 
 void printImg()
